@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3clu51ve Web Studio — Onlayn do'kon va saytlar</title>
+<style>
+  :root { --green:#008060; --dark:#11151c; --grey:#5c6470; --bg:#f7f9fa; --card:#ffffff; }
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',system-ui,-apple-system,sans-serif; }
+  body { background:var(--bg); color:var(--dark); line-height:1.6; }
+  .container { max-width:960px; margin:0 auto; padding:0 20px; }
+  header { background:var(--dark); color:#fff; padding:70px 0 60px; }
+  header h1 { font-size:2.2rem; max-width:640px; margin-bottom:16px; }
+  header h1 span { color:#5ee0a8; }
+  header p { color:#b9c2cf; max-width:560px; font-size:1.05rem; margin-bottom:28px; }
+  .btn { display:inline-block; background:var(--green); color:#fff; padding:14px 28px; border-radius:8px; text-decoration:none; font-weight:600; }
+  .btn.ghost { background:transparent; border:2px solid #3a4553; margin-left:12px; }
+  section { padding:56px 0; }
+  section h2 { font-size:1.7rem; margin-bottom:8px; }
+  section .sub { color:var(--grey); margin-bottom:32px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:20px; }
+  .card { background:var(--card); border-radius:12px; padding:24px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+  .card h3 { margin-bottom:10px; font-size:1.1rem; }
+  .card p { color:var(--grey); font-size:.95rem; }
+  .price { display:inline-block; margin-top:14px; font-weight:700; color:var(--green); }
+  .demo { background:var(--dark); color:#fff; border-radius:12px; padding:32px; text-align:center; }
+  .demo p { color:#b9c2cf; max-width:520px; margin:10px auto 20px; }
+  .demo a.btn { background:#5ee0a8; color:var(--dark); }
+  table { width:100%; border-collapse:collapse; background:var(--card); border-radius:12px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+  th, td { padding:14px 18px; text-align:left; border-bottom:1px solid #eef1f4; font-size:.95rem; }
+  th { background:#f0f3f6; }
+  td.p { color:var(--green); font-weight:700; white-space:nowrap; }
+  .note { background:#fff8e1; border-radius:8px; padding:12px 16px; margin-top:16px; font-size:.9rem; color:#7a6a1f; }
+  footer { background:var(--dark); color:#b9c2cf; text-align:center; padding:36px 0; font-size:.9rem; }
+  footer a { color:#5ee0a8; text-decoration:none; }
+  @media(max-width:600px){ header h1{font-size:1.6rem} .btn.ghost{margin-left:0;margin-top:10px} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <h1>Sizning biznesingiz uchun <span>onlayn do'kon</span> — 3 kunda tayyor</h1>
+    <p>Mahsulotlaringizni internetga chiqaramiz: Shopify do'koni, mahsulotlar, to'lovlar va yetkazib berish — hammasi professional darajada sozlanadi. Siz faqat sotishga qarasiz.</p>
+    <a class="btn" href="#narxlar">Narxlarni ko'rish</a>
+    <a class="btn ghost" href="#demo">Jonli namoyish</a>
+  </div>
+</header>
+
+<section id="xizmatlar">
+  <div class="container">
+    <h2>Xizmatlar</h2>
+    <p class="sub">Har bir xizmat "qiling va unuting" tamoyili bilan — natijani siz ko'rasiz.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>🛒 Shopify do'kon tashkil etish</h3>
+        <p>Dizayn, tema sozlash, to'lov va yetkazib berish, xodimlar uchun ko'rsatma. Do'kon to'liq ishlaydigan holatda topshiriladi.</p>
+        <span class="price">800 000 – 1 500 000 so'mdan</span>
+      </div>
+      <div class="card">
+        <h3>📦 Mahsulot yuklash va sozlash</h3>
+        <p>Mahsulotlar, rasmlar, tavsiflar, narxlar, variantlar (o'lcham/rang) va inventar — hammasi tartib bilan.</p>
+        <span class="price">300 000 so'mdan (50 tagacha)</span>
+      </div>
+      <div class="card">
+        <h3>💻 Landing page (tanasib sayt)</h3>
+        <p>Bitta sahifalik zamonaviy sayt: xizmatlar, narxlar, mijozlar munozarasi uchun tugmalar. Mobil versiyasi bilan.</p>
+        <span class="price">500 000 – 1 000 000 so'mdan</span>
+      </div>
+      <div class="card">
+        <h3>🔧 Doimiy qo'llab-quvvatlash</h3>
+        <p>Yangi mahsulotlar, narx o'zgarishlari, kichik tuzatishlar — oyiga abonent asosida.</p>
+        <span class="price">200 000 so'm/oydan</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="demo" style="background:#eef4f1;">
+  <div class="container">
+    <h2>Jonli namoyish</h2>
+    <p class="sub">So'zga emas, ishga qarang — bu men yig'gan va to'liq sozlagan jonli do'kon:</p>
+    <div class="demo">
+      <h3>StoreLab Demo — Demo Store</h3>
+      <p>Jonli Shopify do'kon: katalog, savat, ishlaydigan checkout, to'lov va yetkazib berish sozlamalari, mobil versiya.</p>
+      <p style="color:#9fb3ab; font-size:.85rem; margin-bottom:16px;">Demo paroli: <b>storelab2026</b> (dev store parol sahifasi so'raydi)</p>
+      <a class="btn" href="https://storelab-demo-x6kixvm5.myshopify.com" target="_blank" rel="noopener">Do'konnı ochish →</a>
+    </div>
+  </div>
+</section>
+
+<section id="narxlar">
+  <div class="container">
+    <h2>Narxlar</h2>
+    <p class="sub">Shaffof narxlar — yashirin to'lovlar yo'q.</p>
+    <table>
+      <tr><th>Xizmat</th><th>Narmal narx</th><th>Birinchi 3 mijozga</th></tr>
+      <tr><td>Shopify do'kon to'liq sozlash</td><td class="p">800 000 – 1 500 000</td><td class="p">–50%</td></tr>
+      <tr><td>Mahsulot yuklash (50 tagacha)</td><td class="p">300 000</td><td class="p">–50%</td></tr>
+      <tr><td>Landing page</td><td class="p">500 000 – 1 000 000</td><td class="p">–50%</td></tr>
+      <tr><td>Oylik qo'llab-quvvatlash</td><td class="p">200 000/oy</td><td class="p">Bepul (1 oy)</td></tr>
+    </table>
+    <div class="note">ℹ️ Konsultatsiya bepul. Shopify o'zi oyiga ~$25–39 tarif oladi (bu Shopify kompaniyasining to'lovi, menga emas). Mijoz hisobini o'zi ochadi — hamma narsa uning nomida qoladi.</div>
+  </div>
+</section>
+
+<section id="boglanish" style="background:#eef4f1;">
+  <div class="container">
+    <h2>Bog'lanish</h2>
+    <p class="sub">Javob berish vaqti: odatda 1 soat ichida.</p>
+    <div class="grid">
+      <div class="card"><h3>📱 Telegram</h3><p><a href="https://t.me/YOUR_TELEGRAM" style="color:var(--green);">@YOUR_TELEGRAM</a></p></div>
+      <div class="card"><h3>📞 Telefon</h3><p>+998 XX XXX XX XX</p></div>
+      <div class="card"><h3>✉️ Email</h3><p>YOUR_EMAIL@gmail.com</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p>© 2026 3clu51ve Web Studio · Toshkent · <a href="https://storelab-demo-x6kixvm5.myshopify.com">Demo do'kon</a> (parol: storelab2026)</p>
+  </div>
+</footer>
+
+</body>
+</html>
