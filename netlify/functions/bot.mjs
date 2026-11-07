@@ -1,6 +1,7 @@
 // uz_website_bot — Netlify Function (Telegram webhook mode)
-// Exclusive Web Studio — 14 xizmat · UZ/RU/EN trilingual · language persisted
-// in Netlify Blobs (fallback: in-memory). Token: Netlify env BOT_TOKEN.
+// Exclusive Web Studio — search-first UX: mijoz xizmat nomini yozadi,
+// bot mos keladigan xizmatni kartada ko'rsatadi. UZ/RU/EN, til Netlify
+// Blobs'da saqlanadi (fallback: in-memory). Token: env BOT_TOKEN.
 
 const API = (token, method) => `https://api.telegram.org/bot${token}/${method}`;
 
@@ -9,30 +10,9 @@ const DEMO_STORE = "https://storelab-demo-x6kixvm5.myshopify.com";
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "storelab2026";
 const CHANNEL_URL = "https://t.me/build_website_uz";
 
-const BOT_NAME = "Exclusive Web Studio 🛒";
-const BOT_DESCRIPTION = (
-  "🛒 Shopify do'konlar · 💻 Saytlar · 🤖 Telegram botlar · 📣 Brending — Toshkent.\n\n" +
-  "14 xizmat, 3 tilda (UZ/RU/EN). Premium paket: do'kon + bot + Payme/Click + kanal.\n\n" +
-  "🎁 Birinchi 3 mijozga −50%\n\n" +
-  "🌐 Demo: storelab-demo-x6kixvm5.myshopify.com (parol: storelab2026)\n" +
-  "🚀 Kanal: t.me/build_website_uz"
-);
-const BOT_SHORT_DESCRIPTION = (
-  "🛒 Shopify do'konlar, saytlar, Telegram botlar — Toshkent. 14 xizmat · 3 til · 3 kunda tayyor."
-);
-const BOT_COMMANDS = [
-  { command: "start", description: "Boshlash · Start · Старт" },
-  { command: "services", description: "14 xizmat · Services · Услуги" },
-  { command: "prices", description: "Narxlar · Prices · Цены" },
-  { command: "demo", description: "Demo do'kon + parol" },
-  { command: "premium", description: "Premium paket" },
-  { command: "help", description: "Yordam · Help · Помощь" },
-];
-
 const LANG_ORDER = ["uz", "ru", "en"];
 const memoryLangs = new Map();
 
-// ---- Persistence: Netlify Blobs, graceful fallback -------------------------
 let blobs = null;
 try {
   const { getStore } = await import("@netlify/blobs");
@@ -47,9 +27,7 @@ async function getLang(chatId) {
     try {
       const v = await blobs.get(key);
       if (v && LANG_ORDER.includes(v)) return v;
-    } catch (e) {
-      console.warn("[lang get]", e && e.message);
-    }
+    } catch (e) { /* ignore */ }
   }
   return memoryLangs.get(key) || "uz";
 }
@@ -58,30 +36,26 @@ async function setLang(chatId, lang) {
   const key = String(chatId);
   memoryLangs.set(key, lang);
   if (blobs) {
-    try {
-      await blobs.set(key, lang);
-    } catch (e) {
-      console.warn("[lang set]", e && e.message);
-    }
+    try { await blobs.set(key, lang); } catch (e) { /* ignore */ }
   }
 }
 
-// ---- Trilingual content ----------------------------------------------------
+// ---- UI labels per language -------------------------------------------------
 
 const T = {
   uz: {
     welcome: (
       "👋 Assalomu alaykum!\n\n" +
-      "*Exclusive Web Studio* — Toshkent. Biznesingiz uchun raqamli yechimlar:\n" +
-      "🛒 Onlayn do'konlar · 💻 Saytlar · 🤖 Telegram botlar · 📣 Brending\n\n" +
-      "⭐ *Premium paket:* do'kon + bot + Payme/Click + kanal — 2.5M–4M so'm\n" +
-      "🎁 Birinchi 3 mijozga *−50%*\n\n" +
-      "✅ Bepul konsultatsiya · ✅ Ish topshirgach to'lov · ✅ 3–7 kun\n\n" +
-      "🌐 Tilni almashtirish pastda 👇"
+      "<b>Exclusive Web Studio</b> — Toshkent. Biznesingiz uchun raqamli yechimlar.\n\n" +
+      "💡 <b>Xizmat kerakmi?</b> Shunchaki yozing: «do'kon», «sayt», «logo», «bot» — " +
+      "bot sizga mos xizmatni darhol ko'rsatadi.\n\n" +
+      "⭐ Premium paket: do'kon + bot + to'lovlar — 2.5M–4M so'm\n" +
+      "🎁 Birinchi 3 mijozga −50%\n\n" +
+      "Yoki pastdagi tugmalardan foydalaning 👇"
     ),
-    services_menu: "🛍 *14 xizmat — 5 yo'nalish*\n\nKerakli yo'nalishni tanlang 👇",
+    services_menu: "🛍 <b>14 xizmat — 5 yo'nalish</b>\n\nKeraklisini tanlang 👇\n\n💡 Yoki shunchaki yozing: «logo», «bot», «do'kon»...",
     prices: (
-      "💰 *Narxlar* (14 xizmat)\n\n" +
+      "💰 <b>Narxlar</b> (14 xizmat)\n\n" +
       "🛒 Onlayn savdo\n" +
       "• Shopify do'kon — 800K–1.5M\n" +
       "• Mahsulot yuklash — 300K\n" +
@@ -101,91 +75,44 @@ const T = {
       "🔧 Qo'llab-quvvatlash — 200K/oy\n\n" +
       "⭐ Premium paket — 2.5M–4M\n\n" +
       "🎁 Birinchi 3 mijozga −50%\n\n" +
-      "✅ Bepul konsultatsiya · ✅ Topshirgach to'lov\n" +
-      "✅ 3–7 kun · ✅ ~1 soat javob"
-    ),
-    cat_savdo: (
-      "🛒 *Onlayn savdo* (3 xizmat)\n\n" +
-      "1. *Shopify do'kon tashkil etish* — 800K–1.5M so'm\n" +
-      "   tema, 8+ mahsulot, to'lovlar, yetkazib berish, mobil versiya\n" +
-      "2. *Mahsulot yuklash* (50 tagacha) — 300K so'm\n" +
-      "   rasmlar, tavsiflar, variantlar (o'lcham/rang), inventar\n" +
-      "3. *Uzum Market seller setup* — 500K–800K so'm\n" +
-      "   kabinet, katalog, mahsulot joylash\n\n" +
-      "🎁 Birinchi 3 mijozga −50%"
-    ),
-    cat_sayt: (
-      "💻 *Saytlar* (3 xizmat)\n\n" +
-      "1. *Landing page* — 500K–1M so'm\n" +
-      "   bir sahifa, mobil versiya, forma, analytics\n" +
-      "2. *Vizitka / korporativ sayt* (3–5 sahifa) — 1M–2M so'm\n" +
-      "   ko'psahifali sayt, UZ/RU/EN, admin panel\n" +
-      "3. *QR menyu* (kafelar uchun) — 250K–400K so'm\n" +
-      "   stollarda QR, menyu yangilash oson"
-    ),
-    cat_bot: (
-      "🤖 *Telegram va to'lovlar* (2 xizmat)\n\n" +
-      "1. *Telegram bot yaratish* (buyurtma/info) — 500K–1.5M so'm\n" +
-      "   menyu, savat, buyurtma xabari, kanal integratsiya\n" +
-      "2. *Payme/Click integratsiya* — 300K–500K so'm\n" +
-      "   merchant hisobi mijozniki, to'lovlar do'konga tushadi"
-    ),
-    cat_growth: (
-      "📣 *Ko'rinish va o'sish* (4 xizmat)\n\n" +
-      "1. *Instagram biznes sahifa* — 200K–300K so'm\n" +
-      "   profil, highlight, post shablonlar\n" +
-      "2. *Google Business Profile* — 150K–250K so'm\n" +
-      "   xaritalarda topilasiz, sharhlar\n" +
-      "3. *Basic SEO* — 250K–400K so'm\n" +
-      "   sarlavhalar, tavsiflar, tezlik\n" +
-      "4. *Logo / brending* — 150K–500K so'm\n" +
-      "   logo, ranglar, ijodiy to'plam"
-    ),
-    cat_support: (
-      "🔧 *Qo'llab-quvvatlash* (1 xizmat)\n\n" +
-      "*Oylik qo'llab-quvvatlash* — 200K/oy\n" +
-      "   yangilanishlar, tuzatishlar, kichik o'zgarishlar\n\n" +
-      "🎁 Birinchi mijozga 1 oy bepul"
-    ),
-    cat_premium: (
-      "⭐ *Premium flagman*\n\n" +
-      "*To'liq onlayn paket* — 2.5M–4M so'm\n\n" +
-      "✅ Shopify do'kon (to'liq sozlangan)\n" +
-      "✅ Telegram bot (menyu, buyurtmalar)\n" +
-      "✅ Payme/Click integratsiya\n" +
-      "✅ Telegram kanal setup\n\n" +
-      "🎁 Birinchi 3 mijozga −50% → *1.25M–2M so'm*\n\n" +
-      "Biznesingiz 1 haftada to'liq onlayn bo'ladi."
+      "✅ Bepul konsultatsiya · ✅ Topshirgach to'lov · ✅ 3–7 kun"
     ),
     lbl: {
       services: "🛍 Xizmatlar (14)", prices: "💰 Narxlar",
       premium: "⭐ Premium paket", demo: "🌐 Demo do'kon",
       channel: "📣 Kanal", order: "💬 Buyurtma / konsultatsiya",
-      back: "◀️ Asosiy menyu", back_services: "◀️ Xizmatlar",
-      cat_savdo: "🛒 Onlayn savdo (3)", cat_sayt: "💻 Saytlar (3)",
-      cat_bot: "🤖 Telegram va to'lovlar (2)", cat_growth: "📣 Ko'rinish va o'sish (4)",
-      cat_support: "🔧 Qo'llab-quvvatlash (1)",
+      order_btn: "📞 Buyurtma qilish",
+      back: "🏠 Asosiy menyu", back_services: "◀️ Xizmatlar",
+      cat_savdo: "🛒 Onlayn savdo", cat_sayt: "💻 Saytlar",
+      cat_bot: "🤖 Telegram va to'lovlar", cat_growth: "📣 Ko'rinish va o'sish",
+      cat_support: "🔧 Qo'llab-quvvatlash", cat_premium: "⭐ Premium paket",
       lang_row: ["🇺🇿 UZ", "🇷🇺 RU", "🇬🇧 EN"],
+      price_label: "Narxi", duration_label: "Muddat",
+      included_label: "Nima kiradi", promo: "🎁 Birinchi 3 mijozga −50%",
+      cur: "so'm",
+      found: "🔍 Topilgan xizmatlar — tanlang:",
+      not_found: "😕 Bu so'z bo'yicha xizmat topilmadi.\n\nSinab ko'ring: «do'kon», «sayt», «logo», «bot», «menyu»\n\nYoki pastdagi tugmalardan tanlang:",
       thanks: "Xabaringiz uchun rahmat! Tez orada javob beraman. Tezkor buyurtma: @",
       unknown: "Noma'lum buyruq. /start ni bosing.",
       demo_msg: "🌐 Demo do'kon: {url}\n🔑 Parol: {pw}",
       lang_switched: "✅ Til: O'zbekcha",
-      help: "🆘 <b>Yordam</b>\n\n• Tugmalar: Xizmatlar, Narxlar, Premium paket\n• 🌍 Til almashtirish: pastdagi UZ/RU/EN tugmalari\n• 🌐 Demo do'kon: /demo\n• Buyurtma: @",
+      help: "🆘 <b>Yordam</b>\n\n• Qidiruv: xizmat nomini yozing (masalan «logo»)\n• Tugmalar: Xizmatlar, Narxlar, Premium paket\n• 🌍 Til: pastdagi UZ/RU/EN tugmalari\n• 🌐 Demo do'kon: /demo\n• Buyurtma: @",
+      cat_pick: "Tanlang 👇",
     },
   },
   ru: {
     welcome: (
       "👋 Здравствуйте!\n\n" +
-      "*Exclusive Web Studio* — Ташкент. Цифровые решения для вашего бизнеса:\n" +
-      "🛒 Интернет-магазины · 💻 Сайты · 🤖 Telegram-боты · 📣 Брендинг\n\n" +
-      "⭐ *Премиум пакет:* магазин + бот + Payme/Click + канал — 2.5–4 млн сум\n" +
-      "🎁 Первым 3 клиентам *−50%*\n\n" +
-      "✅ Бесплатная консультация · ✅ Оплата после сдачи · ✅ 3–7 дней\n\n" +
-      "🌐 Смена языка ниже 👇"
+      "<b>Exclusive Web Studio</b> — Ташкент. Цифровые решения для вашего бизнеса.\n\n" +
+      "💡 <b>Нужна услуга?</b> Просто напишите: «магазин», «сайт», «логотип», «бот» — " +
+      "бот сразу покажет подходящую услугу.\n\n" +
+      "⭐ Премиум пакет: магазин + бот + оплаты — 2.5–4 млн сум\n" +
+      "🎁 Первым 3 клиентам −50%\n\n" +
+      "Или используйте кнопки ниже 👇"
     ),
-    services_menu: "🛍 *14 услуг — 5 направлений*\n\nВыберите направление 👇",
+    services_menu: "🛍 <b>14 услуг — 5 направлений</b>\n\nВыберите нужную 👇\n\n💡 Или просто напишите: «логотип», «бот», «магазин»...",
     prices: (
-      "💰 *Цены* (14 услуг)\n\n" +
+      "💰 <b>Цены</b> (14 услуг)\n\n" +
       "🛒 Онлайн торговля\n" +
       "• Shopify магазин — 800 тыс.–1.5 млн\n" +
       "• Загрузка товаров — 300 тыс.\n" +
@@ -205,91 +132,44 @@ const T = {
       "🔧 Поддержка — 200 тыс./мес\n\n" +
       "⭐ Премиум пакет — 2.5–4 млн\n\n" +
       "🎁 Первым 3 клиентам −50%\n\n" +
-      "✅ Бесплатная консультация · ✅ Оплата после сдачи\n" +
-      "✅ 3–7 дней · ✅ Ответ ~1 час"
-    ),
-    cat_savdo: (
-      "🛒 *Онлайн торговля* (3 услуги)\n\n" +
-      "1. *Создание Shopify магазина* — 800 тыс.–1.5 млн сум\n" +
-      "   тема, 8+ товаров, оплата, доставка, мобильная версия\n" +
-      "2. *Загрузка товаров* (до 50) — 300 тыс. сум\n" +
-      "   фото, описания, варианты (размер/цвет), остатки\n" +
-      "3. *Uzum Market seller setup* — 500–800 тыс. сум\n" +
-      "   кабинет, каталог, размещение товаров\n\n" +
-      "🎁 Первым 3 клиентам −50%"
-    ),
-    cat_sayt: (
-      "💻 *Сайты* (3 услуги)\n\n" +
-      "1. *Landing page* — 500 тыс.–1 млн сум\n" +
-      "   одна страница, мобильная версия, форма, аналитика\n" +
-      "2. *Визитка / корпоративный сайт* (3–5 страниц) — 1–2 млн сум\n" +
-      "   многостраничный сайт, UZ/RU/EN, админ-панель\n" +
-      "3. *QR-меню* (для кафе) — 250–400 тыс. сум\n" +
-      "   QR на столиках, лёгкое обновление меню"
-    ),
-    cat_bot: (
-      "🤖 *Telegram и платежи* (2 услуги)\n\n" +
-      "1. *Создание Telegram-бота* (заказ/инфо) — 500 тыс.–1.5 млн сум\n" +
-      "   меню, корзина, уведомления о заказах, интеграция канала\n" +
-      "2. *Интеграция Payme/Click* — 300–500 тыс. сум\n" +
-      "   merchant-аккаунт ваш, платежи идут в магазин"
-    ),
-    cat_growth: (
-      "📣 *Видимость и рост* (4 услуги)\n\n" +
-      "1. *Instagram бизнес-страница* — 200–300 тыс. сум\n" +
-      "   профиль, хайлайты, шаблоны постов\n" +
-      "2. *Google Business Profile* — 150–250 тыс. сум\n" +
-      "   вас находят на картах, отзывы\n" +
-      "3. *Basic SEO* — 250–400 тыс. сум\n" +
-      "   заголовки, описания, скорость\n" +
-      "4. *Логотип / брендинг* — 150–500 тыс. сум\n" +
-      "   логотип, цвета, фирменный стиль"
-    ),
-    cat_support: (
-      "🔧 *Поддержка* (1 услуга)\n\n" +
-      "*Ежемесячная поддержка* — 200 тыс. сум/мес\n" +
-      "   обновления, правки, небольшие изменения\n\n" +
-      "🎁 Первому клиенту 1 месяц бесплатно"
-    ),
-    cat_premium: (
-      "⭐ *Премиум флагман*\n\n" +
-      "*Полный онлайн пакет* — 2.5–4 млн сум\n\n" +
-      "✅ Shopify магазин (полностью настроен)\n" +
-      "✅ Telegram-бот (меню, заказы)\n" +
-      "✅ Интеграция Payme/Click\n" +
-      "✅ Настройка Telegram-канала\n\n" +
-      "🎁 Первым 3 клиентам −50% → *1.25–2 млн сум*\n\n" +
-      "Ваш бизнес станет полностью онлайн за 1 неделю."
+      "✅ Бесплатная консультация · ✅ Оплата после сдачи · ✅ 3–7 дней"
     ),
     lbl: {
       services: "🛍 Услуги (14)", prices: "💰 Цены",
       premium: "⭐ Премиум пакет", demo: "🌐 Демо магазин",
       channel: "📣 Канал", order: "💬 Заказ / консультация",
-      back: "◀️ Главное меню", back_services: "◀️ Услуги",
-      cat_savdo: "🛒 Онлайн торговля (3)", cat_sayt: "💻 Сайты (3)",
-      cat_bot: "🤖 Telegram и платежи (2)", cat_growth: "📣 Видимость и рост (4)",
-      cat_support: "🔧 Поддержка (1)",
+      order_btn: "📞 Заказать",
+      back: "🏠 Главное меню", back_services: "◀️ Услуги",
+      cat_savdo: "🛒 Онлайн торговля", cat_sayt: "💻 Сайты",
+      cat_bot: "🤖 Telegram и платежи", cat_growth: "📣 Видимость и рост",
+      cat_support: "🔧 Поддержка", cat_premium: "⭐ Премиум пакет",
       lang_row: ["🇺🇿 UZ", "🇷🇺 RU", "🇬🇧 EN"],
+      price_label: "Цена", duration_label: "Срок",
+      included_label: "Что входит", promo: "🎁 Первым 3 клиентам −50%",
+      cur: "сум",
+      found: "🔍 Найденные услуги — выберите:",
+      not_found: "😕 По этому слову услуга не найдена.\n\nПопробуйте: «магазин», «сайт», «логотип», «бот», «меню»\n\nИли выберите кнопками ниже:",
       thanks: "Спасибо за сообщение! Скоро ответим. Быстрый заказ: @",
       unknown: "Неизвестная команда. Нажмите /start.",
       demo_msg: "🌐 Демо магазин: {url}\n🔑 Пароль: {pw}",
       lang_switched: "✅ Язык: Русский",
-      help: "🆘 <b>Помощь</b>\n\n• Кнопки: Услуги, Цены, Премиум пакет\n• 🌍 Смена языка: UZ/RU/EN внизу\n• 🌐 Демо: /demo\n• Заказ: @",
+      help: "🆘 <b>Помощь</b>\n\n• Поиск: напишите название услуги (например «логотип»)\n• Кнопки: Услуги, Цены, Премиум пакет\n• 🌍 Язык: UZ/RU/EN внизу\n• 🌐 Демо: /demo\n• Заказ: @",
+      cat_pick: "Выберите 👇",
     },
   },
   en: {
     welcome: (
       "👋 Hello!\n\n" +
-      "*Exclusive Web Studio* — Tashkent. Digital solutions for your business:\n" +
-      "🛒 Online stores · 💻 Websites · 🤖 Telegram bots · 📣 Branding\n\n" +
-      "⭐ *Premium package:* store + bot + Payme/Click + channel — 2.5–4M UZS\n" +
-      "🎁 First 3 clients get *−50%*\n\n" +
-      "✅ Free consultation · ✅ Pay on delivery · ✅ 3–7 days\n\n" +
-      "🌐 Language switch below 👇"
+      "<b>Exclusive Web Studio</b> — Tashkent. Digital solutions for your business.\n\n" +
+      "💡 <b>Need a service?</b> Just type it: «store», «website», «logo», «bot» — " +
+      "the bot instantly shows the matching service.\n\n" +
+      "⭐ Premium package: store + bot + payments — 2.5–4M UZS\n" +
+      "🎁 First 3 clients get −50%\n\n" +
+      "Or use the buttons below 👇"
     ),
-    services_menu: "🛍 *14 services — 5 categories*\n\nPick the direction you need 👇",
+    services_menu: "🛍 <b>14 services — 5 categories</b>\n\nPick the one you need 👇\n\n💡 Or just type: «logo», «bot», «store»...",
     prices: (
-      "💰 *Prices* (14 services)\n\n" +
+      "💰 <b>Prices</b> (14 services)\n\n" +
       "🛒 Online commerce\n" +
       "• Shopify store — 800K–1.5M\n" +
       "• Product upload — 300K\n" +
@@ -309,92 +189,135 @@ const T = {
       "🔧 Support — 200K/mo\n\n" +
       "⭐ Premium package — 2.5–4M\n\n" +
       "🎁 First 3 clients −50%\n\n" +
-      "✅ Free consultation · ✅ Pay on delivery\n" +
-      "✅ 3–7 days · ✅ ~1 hour response"
-    ),
-    cat_savdo: (
-      "🛒 *Online commerce* (3 services)\n\n" +
-      "1. *Shopify store setup* — 800K–1.5M UZS\n" +
-      "   theme, 8+ products, payments, shipping, mobile-ready\n" +
-      "2. *Product upload* (up to 50) — 300K UZS\n" +
-      "   photos, descriptions, variants (size/color), inventory\n" +
-      "3. *Uzum Market seller setup* — 500–800K UZS\n" +
-      "   seller cabinet, catalog, product listing\n\n" +
-      "🎁 First 3 clients −50%"
-    ),
-    cat_sayt: (
-      "💻 *Websites* (3 services)\n\n" +
-      "1. *Landing page* — 500K–1M UZS\n" +
-      "   single page, mobile-ready, form, analytics\n" +
-      "2. *Business card / corporate site* (3–5 pages) — 1–2M UZS\n" +
-      "   multi-page, UZ/RU/EN, admin panel\n" +
-      "3. *QR menu* (for cafés) — 250–400K UZS\n" +
-      "   QR on tables, easy menu updates"
-    ),
-    cat_bot: (
-      "🤖 *Telegram & payments* (2 services)\n\n" +
-      "1. *Telegram bot creation* (orders/info) — 500K–1.5M UZS\n" +
-      "   menu, cart, order notifications, channel integration\n" +
-      "2. *Payme/Click integration* — 300–500K UZS\n" +
-      "   merchant account is yours, payments go to your store"
-    ),
-    cat_growth: (
-      "📣 *Visibility & growth* (4 services)\n\n" +
-      "1. *Instagram business page* — 200–300K UZS\n" +
-      "   profile, highlights, post templates\n" +
-      "2. *Google Business Profile* — 150–250K UZS\n" +
-      "   get found on maps, reviews\n" +
-      "3. *Basic SEO* — 250–400K UZS\n" +
-      "   headings, descriptions, speed\n" +
-      "4. *Logo / branding* — 150–500K UZS\n" +
-      "   logo, colors, brand kit"
-    ),
-    cat_support: (
-      "🔧 *Support* (1 service)\n\n" +
-      "*Monthly support* — 200K UZS/mo\n" +
-      "   updates, fixes, small changes\n\n" +
-      "🎁 First client: 1 month free"
-    ),
-    cat_premium: (
-      "⭐ *Premium flagship*\n\n" +
-      "*Full online package* — 2.5–4M UZS\n\n" +
-      "✅ Shopify store (fully configured)\n" +
-      "✅ Telegram bot (menu, orders)\n" +
-      "✅ Payme/Click integration\n" +
-      "✅ Telegram channel setup\n\n" +
-      "🎁 First 3 clients −50% → *1.25–2M UZS*\n\n" +
-      "Your business goes fully online in 1 week."
+      "✅ Free consultation · ✅ Pay on delivery · ✅ 3–7 days"
     ),
     lbl: {
       services: "🛍 Services (14)", prices: "💰 Prices",
       premium: "⭐ Premium package", demo: "🌐 Demo store",
       channel: "📣 Channel", order: "💬 Order / consultation",
-      back: "◀️ Main menu", back_services: "◀️ Services",
-      cat_savdo: "🛒 Online commerce (3)", cat_sayt: "💻 Websites (3)",
-      cat_bot: "🤖 Telegram & payments (2)", cat_growth: "📣 Visibility & growth (4)",
-      cat_support: "🔧 Support (1)",
+      order_btn: "📞 Order now",
+      back: "🏠 Main menu", back_services: "◀️ Services",
+      cat_savdo: "🛒 Online commerce", cat_sayt: "💻 Websites",
+      cat_bot: "🤖 Telegram & payments", cat_growth: "📣 Visibility & growth",
+      cat_support: "🔧 Support", cat_premium: "⭐ Premium package",
       lang_row: ["🇺🇿 UZ", "🇷🇺 RU", "🇬🇧 EN"],
+      price_label: "Price", duration_label: "Timeframe",
+      included_label: "What's included", promo: "🎁 First 3 clients −50%",
+      cur: "UZS",
+      found: "🔍 Matching services — pick one:",
+      not_found: "😕 No service matched that word.\n\nTry: «store», «website», «logo», «bot», «menu»\n\nOr pick from the buttons below:",
       thanks: "Thanks for your message! We'll reply shortly. Fast order: @",
       unknown: "Unknown command. Press /start.",
       demo_msg: "🌐 Demo store: {url}\n🔑 Password: {pw}",
       lang_switched: "✅ Language: English",
-      help: "🆘 <b>Help</b>\n\n• Buttons: Services, Prices, Premium package\n• 🌍 Language switch: UZ/RU/EN at the bottom\n• 🌐 Demo store: /demo\n• Order: @",
+      help: "🆘 <b>Help</b>\n\n• Search: type a service name (e.g. «logo»)\n• Buttons: Services, Prices, Premium package\n• 🌍 Language: UZ/RU/EN at the bottom\n• 🌐 Demo store: /demo\n• Order: @",
+      cat_pick: "Pick one 👇",
     },
   },
 };
 
+// ---- Service database: 14 services ------------------------------------------
+
+const SERVICES = [
+  { id: "shopify", cat: "savdo", price: "800K–1.5M", time: { uz: "3–7 kun", ru: "3–7 дней", en: "3–7 days" },
+    kw: ["shopify", "do'kon", "dokon", "магазин", "store", "онлайн", "onlayn", "savdo", "интернет", "internet"],
+    title: { uz: "Shopify do'kon tashkil etish", ru: "Создание Shopify магазина", en: "Shopify store setup" },
+    inc: { uz: ["Dizayn va tema sozlash", "8+ mahsulot yuklash", "To'lov va yetkazib berish", "Mobil versiya"],
+           ru: ["Дизайн и тема", "8+ товаров", "Оплата и доставка", "Мобильная версия"],
+           en: ["Design and theme setup", "8+ products", "Payments and shipping", "Mobile-ready"] } },
+  { id: "products", cat: "savdo", price: "300K", time: { uz: "1–2 kun", ru: "1–2 дня", en: "1–2 days" },
+    kw: ["mahsulot", "yuklash", "товар", "загрузка", "products", "upload", "foto", "фото"],
+    title: { uz: "Mahsulot yuklash (50 tagacha)", ru: "Загрузка товаров (до 50)", en: "Product upload (up to 50)" },
+    inc: { uz: ["Rasmlar bilan", "Tavsiflar va narxlar", "Variantlar (o'lcham/rang)", "Inventar"],
+           ru: ["С фото", "Описания и цены", "Варианты (размер/цвет)", "Остатки"],
+           en: ["With photos", "Descriptions and prices", "Variants (size/color)", "Inventory"] } },
+  { id: "uzum", cat: "savdo", price: "500K–800K", time: { uz: "2–4 kun", ru: "2–4 дня", en: "2–4 days" },
+    kw: ["uzum", "market", "маркет"],
+    title: { uz: "Uzum Market seller setup", ru: "Uzum Market seller setup", en: "Uzum Market seller setup" },
+    inc: { uz: ["Seller kabinet", "Katalog sozlash", "Mahsulot joylash"],
+           ru: ["Кабинет продавца", "Настройка каталога", "Размещение товаров"],
+           en: ["Seller cabinet", "Catalog setup", "Product listing"] } },
+  { id: "landing", cat: "sayt", price: "500K–1M", time: { uz: "2 kun", ru: "2 дня", en: "2 days" },
+    kw: ["landing", "лендинг", "sahifa", "одностраничный"],
+    title: { uz: "Landing page", ru: "Landing page", en: "Landing page" },
+    inc: { uz: ["Zamonaviy dizayn", "Mobil versiya", "Mijoz formasi", "Analytics"],
+           ru: ["Современный дизайн", "Мобильная версия", "Форма для клиентов", "Аналитика"],
+           en: ["Modern design", "Mobile-ready", "Customer form", "Analytics"] } },
+  { id: "corporate", cat: "sayt", price: "1M–2M", time: { uz: "4–7 kun", ru: "4–7 дней", en: "4–7 days" },
+    kw: ["sayt", "сайт", "vizitka", "визитка", "korporativ", "корпоративный", "website", "veb", "web"],
+    title: { uz: "Vizitka / korporativ sayt (3–5 sahifa)", ru: "Визитка / корпоративный сайт (3–5 страниц)", en: "Business / corporate website (3–5 pages)" },
+    inc: { uz: ["3–5 sahifa", "UZ/RU/EN tillar", "Admin panel", "Kontaktlar va forma"],
+           ru: ["3–5 страниц", "Языки UZ/RU/EN", "Админ-панель", "Контакты и форма"],
+           en: ["3–5 pages", "UZ/RU/EN languages", "Admin panel", "Contacts and form"] } },
+  { id: "qrmenu", cat: "sayt", price: "250K–400K", time: { uz: "1–2 kun", ru: "1–2 дня", en: "1–2 days" },
+    kw: ["qr", "menyu", "меню", "kafe", "кафе", "restoran", "restaurant"],
+    title: { uz: "QR menyu (kafelar uchun)", ru: "QR-меню (для кафе)", en: "QR menu (for cafés)" },
+    inc: { uz: ["QR kodlar stollarga", "Onlayn menyu sahifasi", "Oson yangilanish"],
+           ru: ["QR-коды на столы", "Онлайн-страница меню", "Лёгкое обновление"],
+           en: ["QR codes for tables", "Online menu page", "Easy updates"] } },
+  { id: "tbot", cat: "bot", price: "500K–1.5M", time: { uz: "3–5 kun", ru: "3–5 дней", en: "3–5 days" },
+    kw: ["bot", "бот", "telegram"],
+    title: { uz: "Telegram bot yaratish", ru: "Создание Telegram-бота", en: "Telegram bot creation" },
+    inc: { uz: ["Menyu va tugmalar", "Buyurtma qabuli", "Mijozlarga javob", "Kanal integratsiya"],
+           ru: ["Меню и кнопки", "Приём заказов", "Ответы клиентам", "Интеграция канала"],
+           en: ["Menu and buttons", "Order intake", "Customer replies", "Channel integration"] } },
+  { id: "payclick", cat: "bot", price: "300K–500K", time: { uz: "1–3 kun", ru: "1–3 дня", en: "1–3 days" },
+    kw: ["payme", "click", "клик", "пейме", "to'lov", "tolov", "оплата", "платеж", "payment"],
+    title: { uz: "Payme/Click integratsiya", ru: "Интеграция Payme/Click", en: "Payme/Click integration" },
+    inc: { uz: ["Merchant hisobiga ulash", "To'lov tugmalari", "Test va ishga tushirish"],
+           ru: ["Подключение merchant-аккаунта", "Кнопки оплаты", "Тест и запуск"],
+           en: ["Merchant account hookup", "Payment buttons", "Test and launch"] } },
+  { id: "instagram", cat: "growth", price: "200K–300K", time: { uz: "1 kun", ru: "1 день", en: "1 day" },
+    kw: ["instagram", "инстаграм", "insta", "social"],
+    title: { uz: "Instagram biznes sahifa", ru: "Instagram бизнес-страница", en: "Instagram business page" },
+    inc: { uz: ["Biznes akkauntga o'tkazish", "Profil va highlight", "Post shablonlar"],
+           ru: ["Перевод в бизнес-аккаунт", "Профиль и хайлайты", "Шаблоны постов"],
+           en: ["Business account switch", "Profile and highlights", "Post templates"] } },
+  { id: "gmb", cat: "growth", price: "150K–250K", time: { uz: "1 kun", ru: "1 день", en: "1 day" },
+    kw: ["google", "бизнес", "business", "xarita", "карта", "maps", "profil"],
+    title: { uz: "Google Business Profile", ru: "Google Business Profile", en: "Google Business Profile" },
+    inc: { uz: ["Profil yaratish", "Xaritaga qo'shish", "Rasmlar va ma'lumot"],
+           ru: ["Создание профиля", "Добавление на карту", "Фото и информация"],
+           en: ["Profile creation", "Maps listing", "Photos and info"] } },
+  { id: "seo", cat: "growth", price: "250K–400K", time: { uz: "2–3 kun", ru: "2–3 дня", en: "2–3 days" },
+    kw: ["seo", "оптимизация", "поиск", "search"],
+    title: { uz: "Basic SEO", ru: "Basic SEO", en: "Basic SEO" },
+    inc: { uz: ["Sarlavha va tavsiflar", "Tezlik tekshiruvi", "Kalit so'zlar"],
+           ru: ["Заголовки и описания", "Проверка скорости", "Ключевые слова"],
+           en: ["Headings and descriptions", "Speed check", "Keywords"] } },
+  { id: "logo", cat: "growth", price: "150K–500K", time: { uz: "1–3 kun", ru: "1–3 дня", en: "1–3 days" },
+    kw: ["logo", "лого", "логотип", "brend", "бренд", "branding", "dizayn", "дизайн", "brand"],
+    title: { uz: "Logo / brending", ru: "Логотип / брендинг", en: "Logo / branding" },
+    inc: { uz: ["2–3 logo varianti", "Rang palitrasi", "Fayllar to'plami"],
+           ru: ["2–3 варианта логотипа", "Цветовая палитра", "Набор файлов"],
+           en: ["2–3 logo variants", "Color palette", "File kit"] } },
+  { id: "support", cat: "support", price: "200K/oy", time: { uz: "davomiy", ru: "постоянно", en: "ongoing" },
+    kw: ["qo'llab", "qollab", "поддержк", "support", "oylik", "обслуживан", "yangilash"],
+    title: { uz: "Oylik qo'llab-quvvatlash", ru: "Ежемесячная поддержка", en: "Monthly support" },
+    inc: { uz: ["Yangilanishlar", "Kichik tuzatishlar", "Ustuvor javob"],
+           ru: ["Обновления", "Мелкие правки", "Приоритетный ответ"],
+           en: ["Updates", "Small fixes", "Priority replies"] } },
+  { id: "premium", cat: "premium", price: "2.5M–4M", time: { uz: "5–7 kun", ru: "5–7 дней", en: "5–7 days" },
+    kw: ["premium", "paket", "пакет", "to'liq", "полный", "full", "hammasi", "всё", "все"],
+    title: { uz: "⭐ To'liq onlayn paket", ru: "⭐ Полный онлайн пакет", en: "⭐ Full online package" },
+    inc: { uz: ["Shopify do'kon", "Telegram bot", "Payme/Click", "Kanal setup"],
+           ru: ["Shopify магазин", "Telegram-бот", "Payme/Click", "Настройка канала"],
+           en: ["Shopify store", "Telegram bot", "Payme/Click", "Channel setup"] } },
+];
+
+const SVC_BY_ID = Object.fromEntries(SERVICES.map(s => [s.id, s]));
+const CATS = ["savdo", "sayt", "bot", "growth", "support", "premium"];
+
+// ---- Keyboards and cards -----------------------------------------------------
+
 function mainMenu(lang) {
-  const L = T[lang].lbl;
+  const L = T[lang].lbl, lr = L.lang_row;
   return { inline_keyboard: [
     [{ text: L.services, callback_data: "services_menu" }, { text: L.prices, callback_data: "prices" }],
-    [{ text: L.premium, callback_data: "cat_premium" }],
+    [{ text: L.premium, callback_data: "svc_premium" }],
     [{ text: L.demo, url: DEMO_STORE }, { text: L.channel, url: CHANNEL_URL }],
     [{ text: L.order, url: `https://t.me/${OWNER_USERNAME}` }],
-    [
-      { text: L.lang_row[0], callback_data: "set_lang_uz" },
-      { text: L.lang_row[1], callback_data: "set_lang_ru" },
-      { text: L.lang_row[2], callback_data: "set_lang_en" },
-    ],
+    [{ text: lr[0], callback_data: "set_lang_uz" }, { text: lr[1], callback_data: "set_lang_ru" }, { text: lr[2], callback_data: "set_lang_en" }],
   ] };
 }
 
@@ -405,27 +328,61 @@ function servicesMenuKb(lang) {
     [{ text: L.cat_bot, callback_data: "cat_bot" }],
     [{ text: L.cat_growth, callback_data: "cat_growth" }],
     [{ text: L.cat_support, callback_data: "cat_support" }],
-    [{ text: L.premium, callback_data: "cat_premium" }],
+    [{ text: L.premium, callback_data: "svc_premium" }],
     [{ text: L.back, callback_data: "back_main" }],
   ] };
 }
 
-function catKb(lang) {
+function categoryPage(lang, cat) {
+  const L = T[lang].lbl;
+  const services = SERVICES.filter(s => s.cat === cat);
+  const kb = services.map(s => [{ text: `${s.title[lang]} · ${s.price} ${L.cur}`, callback_data: `svc_${s.id}` }]);
+  kb.push([{ text: L.back_services, callback_data: "services_menu" }, { text: L.back, callback_data: "back_main" }]);
+  return { text: `${L["cat_" + cat]} — ${services.length}\n${L.cat_pick}`, keyboard: { inline_keyboard: kb } };
+}
+
+function svcCard(lang, svc) {
+  const L = T[lang].lbl;
+  const lines = [
+    `🛍 <b>${svc.title[lang]}</b>`,
+    "",
+    `💰 ${L.price_label}: <b>${svc.price} ${L.cur}</b>`,
+    `⏱ ${L.duration_label}: ${svc.time[lang]}`,
+    "",
+    `✅ ${L.included_label}:`,
+    ...svc.inc[lang].map(x => `  • ${x}`),
+    "",
+    L.promo,
+  ];
+  return lines.join("\n");
+}
+
+function svcDetailKb(lang, svc) {
   const L = T[lang].lbl;
   return { inline_keyboard: [
-    [{ text: L.back_services, callback_data: "services_menu" }],
+    [{ text: L.order_btn, url: `https://t.me/${OWNER_USERNAME}` }],
+    [{ text: L.back_services, callback_data: `cat_${svc.cat}` }],
     [{ text: L.back, callback_data: "back_main" }],
   ] };
+}
+
+function searchServices(query) {
+  // phone autocorrect turns ' into ’/ʻ — normalize so matching still works
+  const q = query.toLowerCase().replace(/[\u2019\u02BB\u2018]/g, "'");
+  const scored = [];
+  for (const svc of SERVICES) {
+    const hits = svc.kw.filter(kw => q.includes(kw)).length;
+    if (hits) scored.push({ hits, id: svc.id });
+  }
+  scored.sort((a, b) => b.hits - a.hits);
+  return scored.slice(0, 4).map(x => SVC_BY_ID[x.id]);
 }
 
 function demoMsg(lang) {
   return T[lang].lbl.demo_msg.replace("{url}", DEMO_STORE).replace("{pw}", DEMO_PASSWORD);
 }
 
-const CAT_MAP = {
-  cat_savdo: "cat_savdo", cat_sayt: "cat_sayt", cat_bot: "cat_bot",
-  cat_growth: "cat_growth", cat_support: "cat_support", cat_premium: "cat_premium",
-};
+// ---- Telegram plumbing --------------------------------------------------------
 
 async function api(token, method, body) {
   const res = await fetch(API(token, method), {
@@ -437,13 +394,8 @@ async function api(token, method, body) {
   return res.ok;
 }
 
-function mdToHtml(text) {
-  // *bold* -> <b>bold</b>; HTML parse_mode is safer with underscores in usernames
-  return text.replace(/\*([^*\n]+)\*/g, "<b>$1</b>");
-}
-
 async function send(token, chatId, text, menu) {
-  const payload = { chat_id: chatId, text: mdToHtml(text), parse_mode: "HTML" };
+  const payload = { chat_id: chatId, text, parse_mode: "HTML" };
   if (menu) payload.reply_markup = menu;
   return api(token, "sendMessage", payload);
 }
@@ -455,27 +407,42 @@ async function handleUpdate(token, update) {
     const chat = msg.chat.id;
     const lang = await getLang(chat);
     const t = T[lang].lbl;
-    const text = (msg.text || "").trim().toLowerCase();
-    if (text.startsWith("/start") || text === "/menu") {
+    const text = (msg.text || "").trim();
+    const low = text.toLowerCase();
+    if (low.startsWith("/start") || low === "/menu") {
       await send(token, chat, T[lang].welcome, mainMenu(lang));
-    } else if (text === "/xizmatlar" || text === "/services" || text === "/услуги") {
+    } else if (low === "/services" || low === "/xizmatlar" || low === "/услуги") {
       await send(token, chat, T[lang].services_menu, servicesMenuKb(lang));
-    } else if (text === "/narxlar" || text === "/prices" || text === "/цены") {
+    } else if (low === "/prices" || low === "/narxlar" || low === "/цены") {
       await send(token, chat, T[lang].prices, mainMenu(lang));
-    } else if (text === "/demo") {
+    } else if (low === "/demo") {
       await send(token, chat, demoMsg(lang), mainMenu(lang));
-    } else if (text === "/premium") {
-      await send(token, chat, T[lang].cat_premium, mainMenu(lang));
-    } else if (text === "/help" || text === "/yordam" || text === "/помощь") {
+    } else if (low === "/premium") {
+      const svc = SVC_BY_ID.premium;
+      await send(token, chat, svcCard(lang, svc), svcDetailKb(lang, svc));
+    } else if (low.startsWith("/svc_")) {
+      const svc = SVC_BY_ID[low.replace("/svc_", "")];
+      if (svc) await send(token, chat, svcCard(lang, svc), svcDetailKb(lang, svc));
+    } else if (low === "/help" || low === "/yordam" || low === "/помощь") {
       await send(token, chat, t.help + OWNER_USERNAME, mainMenu(lang));
-    } else if (text.startsWith("/")) {
+    } else if (low.startsWith("/")) {
       await send(token, chat, t.unknown, mainMenu(lang));
     } else {
-      await send(token, chat, t.thanks + OWNER_USERNAME, mainMenu(lang));
+      const matches = searchServices(low);
+      if (matches.length === 1) {
+        await send(token, chat, svcCard(lang, matches[0]), svcDetailKb(lang, matches[0]));
+      } else if (matches.length > 1) {
+        const kb = matches.map(s => [{ text: `${s.title[lang]} · ${s.price} ${t.cur}`, callback_data: `svc_${s.id}` }]);
+        kb.push([{ text: t.back, callback_data: "back_main" }]);
+        await send(token, chat, t.found, { inline_keyboard: kb });
+      } else {
+        await send(token, chat, t.not_found, servicesMenuKb(lang));
+      }
     }
   } else if (cb) {
     const chat = cb.message.chat.id;
     const lang = await getLang(chat);
+    const t = T[lang].lbl;
     const data = cb.data;
     if (data === "services_menu") {
       await send(token, chat, T[lang].services_menu, servicesMenuKb(lang));
@@ -483,9 +450,15 @@ async function handleUpdate(token, update) {
       await send(token, chat, T[lang].prices, mainMenu(lang));
     } else if (data === "back_main") {
       await send(token, chat, T[lang].welcome, mainMenu(lang));
-    } else if (CAT_MAP[data]) {
-      const menu = data === "cat_premium" ? mainMenu(lang) : catKb(lang);
-      await send(token, chat, T[lang][CAT_MAP[data]], menu);
+    } else if (data.startsWith("svc_")) {
+      const svc = SVC_BY_ID[data.replace("svc_", "")];
+      if (svc) await send(token, chat, svcCard(lang, svc), svcDetailKb(lang, svc));
+    } else if (data.startsWith("cat_")) {
+      const cat = data.replace("cat_", "");
+      if (CATS.includes(cat)) {
+        const page = categoryPage(lang, cat);
+        await send(token, chat, page.text, page.keyboard);
+      }
     } else if (data.startsWith("set_lang_")) {
       const newLang = data.replace("set_lang_", "");
       if (LANG_ORDER.includes(newLang)) {
@@ -504,10 +477,21 @@ function ensureProfile(token) {
   profileDone = true;
   (async () => {
     try {
-      await api(token, "setMyName", { name: BOT_NAME });
-      await api(token, "setMyDescription", { description: BOT_DESCRIPTION });
-      await api(token, "setMyShortDescription", { short_description: BOT_SHORT_DESCRIPTION });
-      await api(token, "setMyCommands", { commands: BOT_COMMANDS });
+      await api(token, "setMyName", { name: "Exclusive Web Studio 🛒" });
+      await api(token, "setMyDescription", {
+        description: "🛒 Shopify do'konlar · 💻 Saytlar · 🤖 Telegram botlar · 📣 Brending — Toshkent. 14 xizmat, 3 tilda. 🔍 Xizmat nomini yozing — bot topadi. /start",
+      });
+      await api(token, "setMyShortDescription", {
+        short_description: "🛒 Shopify do'konlar, saytlar, botlar — Toshkent. 14 xizmat · 3 til · 3 kunda tayyor.",
+      });
+      await api(token, "setMyCommands", { commands: [
+        { command: "start", description: "Boshlash · Start · Старт" },
+        { command: "services", description: "14 xizmat · Services · Услуги" },
+        { command: "prices", description: "Narxlar · Prices · Цены" },
+        { command: "demo", description: "Demo do'kon + parol" },
+        { command: "premium", description: "Premium paket" },
+        { command: "help", description: "Yordam · Help · Помощь" },
+      ] });
       console.log("[profile] name, description, commands set");
     } catch (e) {
       console.warn("[profile]", e && e.message);
@@ -521,7 +505,7 @@ export default async (req) => {
   if (!token) return new Response("BOT_TOKEN env var not set", { status: 500 });
   ensureProfile(token); // fire-and-forget, once per isolate
 
-  if (req.method === "GET") return new Response("uz_website_bot is alive (UZ/RU/EN)", { status: 200 });
+  if (req.method === "GET") return new Response("uz_website_bot is alive (UZ/RU/EN · search)", { status: 200 });
   if (req.method !== "POST") return new Response("method not allowed", { status: 405 });
 
   try {
