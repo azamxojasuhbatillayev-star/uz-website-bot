@@ -1,12 +1,12 @@
 // uz_website_bot — Netlify Function (Telegram webhook mode)
-// Exclusive Web Studio — search-first UX: mijoz xizmat nomini yozadi,
-// bot mos keladigan xizmatni kartada ko'rsatadi. UZ/RU/EN, til Netlify
-// Blobs'da saqlanadi (fallback: in-memory). Token: env BOT_TOKEN.
+// Exclusive Web Studio — 14 xizmat · UZ/RU/EN · search-first · lead pipeline
+// · user registry (Netlify Blobs) · /broadcast · /stop opt-out · /remind
+// Token: env BOT_TOKEN. Owner: env OWNER_CHAT_ID (fallback baked in).
 
 const API = (token, method) => `https://api.telegram.org/bot${token}/${method}`;
 
 const OWNER_USERNAME = process.env.OWNER_USERNAME || "YOUR_TELEGRAM";
-const OWNER_CHAT_ID = process.env.OWNER_CHAT_ID || "7568804222"; // /id buyrug'idan olingan
+const OWNER_CHAT_ID = process.env.OWNER_CHAT_ID || "7568804222";
 const DEMO_STORE = "https://storelab-demo-x6kixvm5.myshopify.com";
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "storelab2026";
 const CHANNEL_URL = "https://t.me/build_website_uz";
@@ -17,20 +17,46 @@ const memoryLangs = new Map();
 let blobs = null;
 try {
   const { getStore } = await import("@netlify/blobs");
-  blobs = getStore("bot_lang");
+  blobs = getStore("bot_users");
 } catch (e) {
-  console.warn("[lang] Netlify Blobs unavailable, using in-memory:", e && e.message);
+  console.warn("[users] Netlify Blobs unavailable, using in-memory:", e && e.message);
+}
+
+// ---- User registry ----------------------------------------------------------
+
+async function upsertUser(chatId, from, lang, stopOverride = null) {
+  const key = String(chatId);
+  const now = new Date().toISOString();
+  let rec = null;
+  if (blobs) {
+    try {
+      const v = await blobs.get(key);
+      if (v) rec = JSON.parse(v);
+    } catch (e) { /* ignore */ }
+  }
+  if (!rec) rec = memoryUsers.get(key) || { id: chatId, first_seen: now, stop: false };
+  rec.name = (from && from.first_name) || rec.name || "";
+  rec.username = (from && from.username) || rec.username || "";
+  rec.lang = lang;
+  rec.last_seen = now;
+  if (stopOverride !== null) rec.stop = stopOverride;
+  memoryUsers.set(key, rec);
+  if (blobs) {
+    try { await blobs.setJSON(key, rec); } catch (e) { console.warn("[users set]", e && e.message); }
+  }
+  return rec;
 }
 
 async function getStoredLang(chatId) {
   const key = String(chatId);
-  if (blobs) {
+  let rec = memoryUsers.get(key) || null;
+  if (!rec && blobs) {
     try {
       const v = await blobs.get(key);
-      if (v && LANG_ORDER.includes(v)) return v;
+      if (v) rec = JSON.parse(v);
     } catch (e) { /* ignore */ }
   }
-  return memoryLangs.get(key) || null;
+  return rec ? rec.lang : null;
 }
 
 async function getLang(chatId) {
@@ -39,22 +65,34 @@ async function getLang(chatId) {
 
 async function setLang(chatId, lang) {
   const key = String(chatId);
-  memoryLangs.set(key, lang);
+  const rec = await upsertUser(chatId, {}, lang);
+  rec.lang = lang;
+  memoryUsers.set(key, rec);
   if (blobs) {
-    try { await blobs.set(key, lang); } catch (e) { /* ignore */ }
+    try { await blobs.setJSON(key, rec); } catch (e) { /* ignore */ }
   }
 }
 
-async function ensureLang(chatId, tgLang) {
-  let lang = await getStoredLang(chatId);
-  if (!lang) {
-    lang = LANG_ORDER.includes(tgLang) ? tgLang : "uz";
-    await setLang(chatId, lang);
+const memoryUsers = new Map();
+
+async function allUsers() {
+  const users = [];
+  if (blobs) {
+    try {
+      const res = blobs.list();
+      for await (const entry of res) {
+        try { users.push(JSON.parse(entry.value)); } catch (e) { /* skip bad row */ }
+      }
+      return users;
+    } catch (e) {
+      console.warn("[users list]", e && e.message);
+    }
   }
-  return lang;
+  for (const rec of memoryUsers.values()) users.push(rec);
+  return users;
 }
 
-// ---- UI labels per language -------------------------------------------------
+// ---- Trilingual content -----------------------------------------------------
 
 const T = {
   uz: {
@@ -113,9 +151,18 @@ const T = {
       help: "🆘 <b>Yordam</b>\n\n• Qidiruv: xizmat nomini yozing (masalan «logo»)\n• Tugmalar: Xizmatlar, Narxlar, Premium paket\n• 🌍 Til: pastdagi UZ/RU/EN tugmalari\n• 🌐 Demo do'kon: /demo\n• Buyurtma: @",
       cat_pick: "Tanlang 👇",
       price_note: "boshlab — aniq narx bepul konsultatsiyada kelishiladi",
-      discount: "Chegirma bilan: {p}",
+      discount: "✂️ Chegirma bilan: {p}",
       lead_sent: "📩 Xabaringiz studiya adminiga yuborildi — tez orada javob beramiz.",
       id_msg: "🆔 Bu chatning ID raqami (Netlify'dagi OWNER_CHAT_ID uchun):\n<code>{id}</code>",
+      reminder: (
+        "⏳ <b>Eslatma!</b>\n\n" +
+        "🎁 Birinchi 3 mijozga <b>−50%</b> — joylar to'lib bormoqda.\n" +
+        "🛍 14 xizmat: Shopify do'kon, saytlar, botlar, logo, SEO...\n\n" +
+        "🌐 Demo: storelab-demo-x6kixvm5.myshopify.com (parol: storelab2026)\n" +
+        "💬 Joy band qilish: @YOUR_TELEGRAM\n\n" +
+        "❌ Eslatmalarni o'chirish: /stop"
+      ),
+      stopped: "✅ Eslatmalar siz uchun o'chirildi. Qayta yoqish: /start",
     },
   },
   ru: {
@@ -174,9 +221,18 @@ const T = {
       help: "🆘 <b>Помощь</b>\n\n• Поиск: напишите название услуги (например «логотип»)\n• Кнопки: Услуги, Цены, Премиум пакет\n• 🌍 Язык: UZ/RU/EN внизу\n• 🌐 Демо: /demo\n• Заказ: @",
       cat_pick: "Выберите 👇",
       price_note: "начиная с — точную цену согласуем на бесплатной консультации",
-      discount: "Со скидкой: {p}",
+      discount: "✂️ Со скидкой: {p}",
       lead_sent: "📩 Ваше сообщение отправлено админу студии — скоро ответим.",
       id_msg: "🆔 ID этого чата (для OWNER_CHAT_ID в Netlify):\n<code>{id}</code>",
+      reminder: (
+        "⏳ <b>Напоминание!</b>\n\n" +
+        "🎁 Первым 3 клиентам <b>−50%</b> — места заполняются.\n" +
+        "🛍 14 услуг: Shopify магазины, сайты, боты, логотипы, SEO...\n\n" +
+        "🌐 Демо: storelab-demo-x6kixvm5.myshopify.com (пароль: storelab2026)\n" +
+        "💬 Забронировать: @YOUR_TELEGRAM\n\n" +
+        "❌ Отключить напоминания: /stop"
+      ),
+      stopped: "✅ Напоминания для вас отключены. Включить снова: /start",
     },
   },
   en: {
@@ -235,9 +291,18 @@ const T = {
       help: "🆘 <b>Help</b>\n\n• Search: type a service name (e.g. «logo»)\n• Buttons: Services, Prices, Premium package\n• 🌍 Language: UZ/RU/EN at the bottom\n• 🌐 Demo store: /demo\n• Order: @",
       cat_pick: "Pick one 👇",
       price_note: "starting from — exact price agreed at the free consultation",
-      discount: "With discount: {p}",
+      discount: "✂️ With discount: {p}",
       lead_sent: "📩 Your message was forwarded to the studio admin — we'll reply shortly.",
       id_msg: "🆔 This chat's ID (for OWNER_CHAT_ID in Netlify):\n<code>{id}</code>",
+      reminder: (
+        "⏳ <b>Don't miss out!</b>\n\n" +
+        "🎁 First 3 clients get <b>−50%</b> — spots are filling up.\n" +
+        "🛍 14 services: Shopify stores, websites, bots, logos, SEO...\n\n" +
+        "🌐 Demo: storelab-demo-x6kixvm5.myshopify.com (password: storelab2026)\n" +
+        "💬 Book a spot: @YOUR_TELEGRAM\n\n" +
+        "❌ Turn off reminders: /stop"
+      ),
+      stopped: "✅ Reminders turned off for you. Turn back on: /start",
     },
   },
 };
@@ -340,7 +405,7 @@ const MIN_PRICE = { shopify: 800, products: 300, uzum: 500, landing: 500, corpor
 
 const CATS = ["savdo", "sayt", "bot", "growth", "support", "premium"];
 
-// ---- Keyboards and cards -----------------------------------------------------
+// ---- Keyboards and cards ------------------------------------------------------
 
 function mainMenu(lang) {
   const L = T[lang].lbl, lr = L.lang_row;
@@ -440,34 +505,52 @@ async function handleUpdate(token, update) {
   const cb = update.callback_query;
   if (msg) {
     const chat = msg.chat.id;
-    const lang = await ensureLang(chat, ((msg.from && msg.from.language_code) || "").slice(0, 2));
+    const lang = await getLang(chat);
     const t = T[lang].lbl;
     const text = (msg.text || "").trim();
     const low = text.toLowerCase();
+
+    await upsertUser(chat, msg.from, lang);
+
     if (low.startsWith("/start") || low === "/menu") {
+      await upsertUser(chat, msg.from, lang, false); // /start re-subscribes
       await send(token, chat, T[lang].welcome, mainMenu(lang));
-    } else if (low === "/services" || low === "/xizmatlar" || low === "/услуги") {
-      await send(token, chat, T[lang].services_menu, servicesMenuKb(lang));
-    } else if (low === "/prices" || low === "/narxlar" || low === "/цены") {
-      await send(token, chat, T[lang].prices, mainMenu(lang));
-    } else if (low === "/demo") {
-      await send(token, chat, demoMsg(lang), mainMenu(lang));
-    } else if (low === "/premium") {
-      const svc = SVC_BY_ID.premium;
-      await send(token, chat, svcCard(lang, svc), svcDetailKb(lang, svc));
-    } else if (low === "/id") {
-      await send(token, chat, t.id_msg.replace("{id}", String(chat)), mainMenu(lang));
+    } else if (low === "/users") {
+      if (String(chat) !== OWNER_CHAT_ID) return await send(token, chat, t.unknown, mainMenu(lang));
+      const users = await allUsers();
+      const lines = users.map(u => `• ${u.name || "—"} (@${u.username || "—"}) · ${u.lang} · ${u.stop ? "opted-out" : "active"}`);
+      await send(token, chat, `👥 Users: ${users.length}\n\n${lines.join("\n") || "empty"}`);
+    } else if (low === "/stop") {
+      await upsertUser(chat, msg.from, lang, true); // opt out of reminders
+      await send(token, chat, t.stopped, mainMenu(lang));
     } else if (low.startsWith("/broadcast") && String(chat) === OWNER_CHAT_ID) {
       const btext = text.replace("/broadcast", "").trim();
       if (btext) {
+        const users = await allUsers();
         let sent = 0;
-        for (const cid of memoryLangs.keys()) {
-          try { await send(token, Number(cid), "📣 " + btext, mainMenu(await getLang(cid))); sent++; } catch (e) { /* skip */ }
+        for (const u of users) {
+          if (u.stop) continue;
+          try { await send(token, u.id, "📣 " + btext, mainMenu(u.lang || "uz")); sent++; } catch (e) { /* skip */ }
         }
         await send(token, chat, `📣 Broadcast yuborildi: ${sent} user`, mainMenu(lang));
       } else {
         await send(token, chat, "Matn ham yozing: /broadcast Salom!", mainMenu(lang));
       }
+    } else if (low === "/remind") {
+      if (String(chat) !== OWNER_CHAT_ID) return await send(token, chat, t.unknown, mainMenu(lang));
+      const users = await allUsers();
+      let sent = 0;
+      for (const u of users) {
+        if (u.stop) continue;
+        const ulang = LANG_ORDER.includes(u.lang) ? u.lang : "uz";
+        try { await send(token, u.id, T[ulang].lbl.reminder, mainMenu(ulang)); sent++; } catch (e) { /* skip */ }
+      }
+      await send(token, chat, `🔔 Reminder yuborildi: ${sent} user (test)`, mainMenu(lang));
+    } else if (low === "/id") {
+      await send(token, chat, t.id_msg.replace("{id}", String(chat)), mainMenu(lang));
+    } else if (low === "/premium") {
+      const svc = SVC_BY_ID.premium;
+      await send(token, chat, svcCard(lang, svc), svcDetailKb(lang, svc));
     } else if (low.startsWith("/svc_")) {
       const svc = SVC_BY_ID[low.replace("/svc_", "")];
       if (svc) await send(token, chat, svcCard(lang, svc), svcDetailKb(lang, svc));
@@ -486,7 +569,6 @@ async function handleUpdate(token, update) {
         kb.push([{ text: t.back, callback_data: "back_main" }]);
         await send(token, chat, t.found, { inline_keyboard: kb });
       } else if (OWNER_CHAT_ID && String(chat) !== OWNER_CHAT_ID) {
-        // lead: unmatched message -> forward to the owner
         await api(token, "copyMessage", { chat_id: OWNER_CHAT_ID, from_chat_id: chat, message_id: msg.message_id });
         const frm = msg.from || {};
         await api(token, "sendMessage", { chat_id: OWNER_CHAT_ID,
@@ -539,7 +621,7 @@ function ensureProfile(token) {
         description: "🛒 Shopify do'konlar · 💻 Saytlar · 🤖 Telegram botlar · 📣 Brending — Toshkent. 14 xizmat, 3 tilda. 🔍 Xizmat nomini yozing — bot topadi. /start",
       });
       await api(token, "setMyShortDescription", {
-        short_description: "🛒 Shopify do'konlar, saytlar, botlar — Toshkent. 14 xizmat · 3 til · 3 kunda tayyor.",
+        short_description: "🛒 Shopify do'konlar, saytlar, Telegram botlar — Toshkent. 14 xizmat · 3 til · 3 kunda tayyor.",
       });
       await api(token, "setMyCommands", { commands: [
         { command: "start", description: "Boshlash · Start · Старт" },
@@ -548,6 +630,7 @@ function ensureProfile(token) {
         { command: "demo", description: "Demo do'kon + parol" },
         { command: "premium", description: "Premium paket" },
         { command: "help", description: "Yordam · Help · Помощь" },
+        { command: "stop", description: "Eslatmalarni o'chirish · Opt-out" },
       ] });
       console.log("[profile] name, description, commands set");
     } catch (e) {
@@ -562,7 +645,7 @@ export default async (req) => {
   if (!token) return new Response("BOT_TOKEN env var not set", { status: 500 });
   ensureProfile(token); // fire-and-forget, once per isolate
 
-  if (req.method === "GET") return new Response("uz_website_bot is alive (UZ/RU/EN · search)", { status: 200 });
+  if (req.method === "GET") return new Response("uz_website_bot is alive (UZ/RU/EN · search · reminders)", { status: 200 });
   if (req.method !== "POST") return new Response("method not allowed", { status: 405 });
 
   try {
