@@ -5,7 +5,7 @@ const API = (token, method) => `https://api.telegram.org/bot${token}/${method}`;
 
 // ⚠️ Edit this once on GitHub (or set Netlify env var OWNER_USERNAME):
 const OWNER_USERNAME = process.env.OWNER_USERNAME || "YOUR_TELEGRAM";
-const DEMO_STORE = "https://3clu51ve-security-lab.myshopify.com";
+const DEMO_STORE = "https://storelab-demo-x6kixvm5.myshopify.com";
 
 const MAIN_MENU = {
   inline_keyboard: [
