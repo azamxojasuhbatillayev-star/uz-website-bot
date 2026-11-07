@@ -9,6 +9,26 @@ const DEMO_STORE = "https://storelab-demo-x6kixvm5.myshopify.com";
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "storelab2026";
 const CHANNEL_URL = "https://t.me/build_website_uz";
 
+const BOT_NAME = "Exclusive Web Studio 🛒";
+const BOT_DESCRIPTION = (
+  "🛒 Shopify do'konlar · 💻 Saytlar · 🤖 Telegram botlar · 📣 Brending — Toshkent.\n\n" +
+  "14 xizmat, 3 tilda (UZ/RU/EN). Premium paket: do'kon + bot + Payme/Click + kanal.\n\n" +
+  "🎁 Birinchi 3 mijozga −50%\n\n" +
+  "🌐 Demo: storelab-demo-x6kixvm5.myshopify.com (parol: storelab2026)\n" +
+  "🚀 Kanal: t.me/build_website_uz"
+);
+const BOT_SHORT_DESCRIPTION = (
+  "🛒 Shopify do'konlar, saytlar, Telegram botlar — Toshkent. 14 xizmat · 3 til · 3 kunda tayyor."
+);
+const BOT_COMMANDS = [
+  { command: "start", description: "Boshlash · Start · Старт" },
+  { command: "services", description: "14 xizmat · Services · Услуги" },
+  { command: "prices", description: "Narxlar · Prices · Цены" },
+  { command: "demo", description: "Demo do'kon + parol" },
+  { command: "premium", description: "Premium paket" },
+  { command: "help", description: "Yordam · Help · Помощь" },
+];
+
 const LANG_ORDER = ["uz", "ru", "en"];
 const memoryLangs = new Map();
 
@@ -150,6 +170,7 @@ const T = {
       unknown: "Noma'lum buyruq. /start ni bosing.",
       demo_msg: "🌐 Demo do'kon: {url}\n🔑 Parol: {pw}",
       lang_switched: "✅ Til: O'zbekcha",
+      help: "🆘 <b>Yordam</b>\n\n• Tugmalar: Xizmatlar, Narxlar, Premium paket\n• 🌍 Til almashtirish: pastdagi UZ/RU/EN tugmalari\n• 🌐 Demo do'kon: /demo\n• Buyurtma: @",
     },
   },
   ru: {
@@ -253,6 +274,7 @@ const T = {
       unknown: "Неизвестная команда. Нажмите /start.",
       demo_msg: "🌐 Демо магазин: {url}\n🔑 Пароль: {pw}",
       lang_switched: "✅ Язык: Русский",
+      help: "🆘 <b>Помощь</b>\n\n• Кнопки: Услуги, Цены, Премиум пакет\n• 🌍 Смена языка: UZ/RU/EN внизу\n• 🌐 Демо: /demo\n• Заказ: @",
     },
   },
   en: {
@@ -356,6 +378,7 @@ const T = {
       unknown: "Unknown command. Press /start.",
       demo_msg: "🌐 Demo store: {url}\n🔑 Password: {pw}",
       lang_switched: "✅ Language: English",
+      help: "🆘 <b>Help</b>\n\n• Buttons: Services, Prices, Premium package\n• 🌍 Language switch: UZ/RU/EN at the bottom\n• 🌐 Demo store: /demo\n• Order: @",
     },
   },
 };
@@ -414,8 +437,13 @@ async function api(token, method, body) {
   return res.ok;
 }
 
+function mdToHtml(text) {
+  // *bold* -> <b>bold</b>; HTML parse_mode is safer with underscores in usernames
+  return text.replace(/\*([^*\n]+)\*/g, "<b>$1</b>");
+}
+
 async function send(token, chatId, text, menu) {
-  const payload = { chat_id: chatId, text };
+  const payload = { chat_id: chatId, text: mdToHtml(text), parse_mode: "HTML" };
   if (menu) payload.reply_markup = menu;
   return api(token, "sendMessage", payload);
 }
@@ -438,6 +466,8 @@ async function handleUpdate(token, update) {
       await send(token, chat, demoMsg(lang), mainMenu(lang));
     } else if (text === "/premium") {
       await send(token, chat, T[lang].cat_premium, mainMenu(lang));
+    } else if (text === "/help" || text === "/yordam" || text === "/помощь") {
+      await send(token, chat, t.help + OWNER_USERNAME, mainMenu(lang));
     } else if (text.startsWith("/")) {
       await send(token, chat, t.unknown, mainMenu(lang));
     } else {
@@ -468,13 +498,33 @@ async function handleUpdate(token, update) {
   }
 }
 
+let profileDone = false;
+function ensureProfile(token) {
+  if (profileDone) return;
+  profileDone = true;
+  (async () => {
+    try {
+      await api(token, "setMyName", { name: BOT_NAME });
+      await api(token, "setMyDescription", { description: BOT_DESCRIPTION });
+      await api(token, "setMyShortDescription", { short_description: BOT_SHORT_DESCRIPTION });
+      await api(token, "setMyCommands", { commands: BOT_COMMANDS });
+      console.log("[profile] name, description, commands set");
+    } catch (e) {
+      console.warn("[profile]", e && e.message);
+      profileDone = false;
+    }
+  })();
+}
+
 export default async (req) => {
+  const token = process.env.BOT_TOKEN;
+  if (!token) return new Response("BOT_TOKEN env var not set", { status: 500 });
+  ensureProfile(token); // fire-and-forget, once per isolate
+
   if (req.method === "GET") return new Response("uz_website_bot is alive (UZ/RU/EN)", { status: 200 });
   if (req.method !== "POST") return new Response("method not allowed", { status: 405 });
 
   try {
-    const token = process.env.BOT_TOKEN;
-    if (!token) return new Response("BOT_TOKEN env var not set", { status: 500 });
     const update = await req.json();
     await handleUpdate(token, update);
   } catch (e) {
