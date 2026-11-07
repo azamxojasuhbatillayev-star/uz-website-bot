@@ -6,7 +6,7 @@
 const API = (token, method) => `https://api.telegram.org/bot${token}/${method}`;
 
 const OWNER_USERNAME = process.env.OWNER_USERNAME || "YOUR_TELEGRAM";
-const OWNER_CHAT_ID = process.env.OWNER_CHAT_ID || ""; // /id buyrug'idan
+const OWNER_CHAT_ID = process.env.OWNER_CHAT_ID || "7568804222"; // /id buyrug'idan olingan
 const DEMO_STORE = "https://storelab-demo-x6kixvm5.myshopify.com";
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "storelab2026";
 const CHANNEL_URL = "https://t.me/build_website_uz";
