@@ -6,6 +6,7 @@
 const API = (token, method) => `https://api.telegram.org/bot${token}/${method}`;
 
 const OWNER_USERNAME = process.env.OWNER_USERNAME || "YOUR_TELEGRAM";
+const OWNER_CHAT_ID = process.env.OWNER_CHAT_ID || ""; // /id buyrug'idan
 const DEMO_STORE = "https://storelab-demo-x6kixvm5.myshopify.com";
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "storelab2026";
 const CHANNEL_URL = "https://t.me/build_website_uz";
@@ -21,7 +22,7 @@ try {
   console.warn("[lang] Netlify Blobs unavailable, using in-memory:", e && e.message);
 }
 
-async function getLang(chatId) {
+async function getStoredLang(chatId) {
   const key = String(chatId);
   if (blobs) {
     try {
@@ -29,7 +30,11 @@ async function getLang(chatId) {
       if (v && LANG_ORDER.includes(v)) return v;
     } catch (e) { /* ignore */ }
   }
-  return memoryLangs.get(key) || "uz";
+  return memoryLangs.get(key) || null;
+}
+
+async function getLang(chatId) {
+  return (await getStoredLang(chatId)) || "uz";
 }
 
 async function setLang(chatId, lang) {
@@ -38,6 +43,15 @@ async function setLang(chatId, lang) {
   if (blobs) {
     try { await blobs.set(key, lang); } catch (e) { /* ignore */ }
   }
+}
+
+async function ensureLang(chatId, tgLang) {
+  let lang = await getStoredLang(chatId);
+  if (!lang) {
+    lang = LANG_ORDER.includes(tgLang) ? tgLang : "uz";
+    await setLang(chatId, lang);
+  }
+  return lang;
 }
 
 // ---- UI labels per language -------------------------------------------------
@@ -99,6 +113,9 @@ const T = {
       help: "🆘 <b>Yordam</b>\n\n• Qidiruv: xizmat nomini yozing (masalan «logo»)\n• Tugmalar: Xizmatlar, Narxlar, Premium paket\n• 🌍 Til: pastdagi UZ/RU/EN tugmalari\n• 🌐 Demo do'kon: /demo\n• Buyurtma: @",
       cat_pick: "Tanlang 👇",
       price_note: "boshlab — aniq narx bepul konsultatsiyada kelishiladi",
+      discount: "Chegirma bilan: {p}",
+      lead_sent: "📩 Xabaringiz studiya adminiga yuborildi — tez orada javob beramiz.",
+      id_msg: "🆔 Bu chatning ID raqami (Netlify'dagi OWNER_CHAT_ID uchun):\n<code>{id}</code>",
     },
   },
   ru: {
@@ -157,6 +174,9 @@ const T = {
       help: "🆘 <b>Помощь</b>\n\n• Поиск: напишите название услуги (например «логотип»)\n• Кнопки: Услуги, Цены, Премиум пакет\n• 🌍 Язык: UZ/RU/EN внизу\n• 🌐 Демо: /demo\n• Заказ: @",
       cat_pick: "Выберите 👇",
       price_note: "начиная с — точную цену согласуем на бесплатной консультации",
+      discount: "Со скидкой: {p}",
+      lead_sent: "📩 Ваше сообщение отправлено админу студии — скоро ответим.",
+      id_msg: "🆔 ID этого чата (для OWNER_CHAT_ID в Netlify):\n<code>{id}</code>",
     },
   },
   en: {
@@ -215,6 +235,9 @@ const T = {
       help: "🆘 <b>Help</b>\n\n• Search: type a service name (e.g. «logo»)\n• Buttons: Services, Prices, Premium package\n• 🌍 Language: UZ/RU/EN at the bottom\n• 🌐 Demo store: /demo\n• Order: @",
       cat_pick: "Pick one 👇",
       price_note: "starting from — exact price agreed at the free consultation",
+      discount: "With discount: {p}",
+      lead_sent: "📩 Your message was forwarded to the studio admin — we'll reply shortly.",
+      id_msg: "🆔 This chat's ID (for OWNER_CHAT_ID in Netlify):\n<code>{id}</code>",
     },
   },
 };
@@ -352,10 +375,13 @@ function categoryPage(lang, cat) {
 
 function svcCard(lang, svc) {
   const L = T[lang].lbl;
+  const disc = MIN_PRICE[svc.id] / 2;
+  const discTxt = (disc < 1000 ? `${disc}K` : `${(disc / 1000).toString().replace(/\.0+$/, "")}M`) + " " + L.cur;
   const lines = [
     `🛍 <b>${svc.title[lang]}</b>`,
     "",
     `💰 ${L.price_label}: <b>${svc.price} ${L.cur}</b> (${L.price_note})`,
+    `✂️ ${L.discount.replace("{p}", `<b>${discTxt}</b>`)}`,
     `⏱ ${L.duration_label}: ${svc.time[lang]}`,
     "",
     `✅ ${L.included_label}:`,
@@ -414,7 +440,7 @@ async function handleUpdate(token, update) {
   const cb = update.callback_query;
   if (msg) {
     const chat = msg.chat.id;
-    const lang = await getLang(chat);
+    const lang = await ensureLang(chat, ((msg.from && msg.from.language_code) || "").slice(0, 2));
     const t = T[lang].lbl;
     const text = (msg.text || "").trim();
     const low = text.toLowerCase();
@@ -429,6 +455,19 @@ async function handleUpdate(token, update) {
     } else if (low === "/premium") {
       const svc = SVC_BY_ID.premium;
       await send(token, chat, svcCard(lang, svc), svcDetailKb(lang, svc));
+    } else if (low === "/id") {
+      await send(token, chat, t.id_msg.replace("{id}", String(chat)), mainMenu(lang));
+    } else if (low.startsWith("/broadcast") && String(chat) === OWNER_CHAT_ID) {
+      const btext = text.replace("/broadcast", "").trim();
+      if (btext) {
+        let sent = 0;
+        for (const cid of memoryLangs.keys()) {
+          try { await send(token, Number(cid), "📣 " + btext, mainMenu(await getLang(cid))); sent++; } catch (e) { /* skip */ }
+        }
+        await send(token, chat, `📣 Broadcast yuborildi: ${sent} user`, mainMenu(lang));
+      } else {
+        await send(token, chat, "Matn ham yozing: /broadcast Salom!", mainMenu(lang));
+      }
     } else if (low.startsWith("/svc_")) {
       const svc = SVC_BY_ID[low.replace("/svc_", "")];
       if (svc) await send(token, chat, svcCard(lang, svc), svcDetailKb(lang, svc));
@@ -436,6 +475,8 @@ async function handleUpdate(token, update) {
       await send(token, chat, t.help + OWNER_USERNAME, mainMenu(lang));
     } else if (low.startsWith("/")) {
       await send(token, chat, t.unknown, mainMenu(lang));
+    } else if (low.startsWith("salom") || low.startsWith("assalomu") || low === "hello" || low === "hi" || low.startsWith("привет")) {
+      await send(token, chat, T[lang].welcome, mainMenu(lang));
     } else {
       const matches = searchServices(low);
       if (matches.length === 1) {
@@ -444,6 +485,13 @@ async function handleUpdate(token, update) {
         const kb = matches.map(s => [{ text: `${s.title[lang]} · ${s.price} ${t.cur}`, callback_data: `svc_${s.id}` }]);
         kb.push([{ text: t.back, callback_data: "back_main" }]);
         await send(token, chat, t.found, { inline_keyboard: kb });
+      } else if (OWNER_CHAT_ID && String(chat) !== OWNER_CHAT_ID) {
+        // lead: unmatched message -> forward to the owner
+        await api(token, "copyMessage", { chat_id: OWNER_CHAT_ID, from_chat_id: chat, message_id: msg.message_id });
+        const frm = msg.from || {};
+        await api(token, "sendMessage", { chat_id: OWNER_CHAT_ID,
+          text: `📩 Lead: ${frm.first_name || ""} (@${frm.username || "—"}) · lang: ${lang}` });
+        await send(token, chat, t.lead_sent, mainMenu(lang));
       } else {
         await send(token, chat, t.not_found, servicesMenuKb(lang));
       }
