@@ -98,6 +98,7 @@ const T = {
       lang_switched: "✅ Til: O'zbekcha",
       help: "🆘 <b>Yordam</b>\n\n• Qidiruv: xizmat nomini yozing (masalan «logo»)\n• Tugmalar: Xizmatlar, Narxlar, Premium paket\n• 🌍 Til: pastdagi UZ/RU/EN tugmalari\n• 🌐 Demo do'kon: /demo\n• Buyurtma: @",
       cat_pick: "Tanlang 👇",
+      price_note: "boshlab — aniq narx bepul konsultatsiyada kelishiladi",
     },
   },
   ru: {
@@ -155,6 +156,7 @@ const T = {
       lang_switched: "✅ Язык: Русский",
       help: "🆘 <b>Помощь</b>\n\n• Поиск: напишите название услуги (например «логотип»)\n• Кнопки: Услуги, Цены, Премиум пакет\n• 🌍 Язык: UZ/RU/EN внизу\n• 🌐 Демо: /demo\n• Заказ: @",
       cat_pick: "Выберите 👇",
+      price_note: "начиная с — точную цену согласуем на бесплатной консультации",
     },
   },
   en: {
@@ -212,6 +214,7 @@ const T = {
       lang_switched: "✅ Language: English",
       help: "🆘 <b>Help</b>\n\n• Search: type a service name (e.g. «logo»)\n• Buttons: Services, Prices, Premium package\n• 🌍 Language: UZ/RU/EN at the bottom\n• 🌐 Demo store: /demo\n• Order: @",
       cat_pick: "Pick one 👇",
+      price_note: "starting from — exact price agreed at the free consultation",
     },
   },
 };
@@ -226,19 +229,19 @@ const SERVICES = [
            ru: ["Дизайн и тема", "8+ товаров", "Оплата и доставка", "Мобильная версия"],
            en: ["Design and theme setup", "8+ products", "Payments and shipping", "Mobile-ready"] } },
   { id: "products", cat: "savdo", price: "300K", time: { uz: "1–2 kun", ru: "1–2 дня", en: "1–2 days" },
-    kw: ["mahsulot", "yuklash", "товар", "загрузка", "products", "upload", "foto", "фото"],
+    kw: ["mahsulot", "yuklash", "товар", "загрузка", "products", "upload", "savdo"],
     title: { uz: "Mahsulot yuklash (50 tagacha)", ru: "Загрузка товаров (до 50)", en: "Product upload (up to 50)" },
     inc: { uz: ["Rasmlar bilan", "Tavsiflar va narxlar", "Variantlar (o'lcham/rang)", "Inventar"],
            ru: ["С фото", "Описания и цены", "Варианты (размер/цвет)", "Остатки"],
            en: ["With photos", "Descriptions and prices", "Variants (size/color)", "Inventory"] } },
   { id: "uzum", cat: "savdo", price: "500K–800K", time: { uz: "2–4 kun", ru: "2–4 дня", en: "2–4 days" },
-    kw: ["uzum", "market", "маркет"],
+    kw: ["uzum", "market", "маркет", "savdo", "onlayn"],
     title: { uz: "Uzum Market seller setup", ru: "Uzum Market seller setup", en: "Uzum Market seller setup" },
     inc: { uz: ["Seller kabinet", "Katalog sozlash", "Mahsulot joylash"],
            ru: ["Кабинет продавца", "Настройка каталога", "Размещение товаров"],
            en: ["Seller cabinet", "Catalog setup", "Product listing"] } },
   { id: "landing", cat: "sayt", price: "500K–1M", time: { uz: "2 kun", ru: "2 дня", en: "2 days" },
-    kw: ["landing", "лендинг", "sahifa", "одностраничный"],
+    kw: ["landing", "лендинг", "sahifa", "одностраничный", "sayt", "сайт", "website"],
     title: { uz: "Landing page", ru: "Landing page", en: "Landing page" },
     inc: { uz: ["Zamonaviy dizayn", "Mobil versiya", "Mijoz formasi", "Analytics"],
            ru: ["Современный дизайн", "Мобильная версия", "Форма для клиентов", "Аналитика"],
@@ -250,7 +253,7 @@ const SERVICES = [
            ru: ["3–5 страниц", "Языки UZ/RU/EN", "Админ-панель", "Контакты и форма"],
            en: ["3–5 pages", "UZ/RU/EN languages", "Admin panel", "Contacts and form"] } },
   { id: "qrmenu", cat: "sayt", price: "250K–400K", time: { uz: "1–2 kun", ru: "1–2 дня", en: "1–2 days" },
-    kw: ["qr", "menyu", "меню", "kafe", "кафе", "restoran", "restaurant"],
+    kw: ["qr", "menyu", "меню", "kafe", "кафе", "restoran", "restaurant", "sayt", "сайт", "website"],
     title: { uz: "QR menyu (kafelar uchun)", ru: "QR-меню (для кафе)", en: "QR menu (for cafés)" },
     inc: { uz: ["QR kodlar stollarga", "Onlayn menyu sahifasi", "Oson yangilanish"],
            ru: ["QR-коды на столы", "Онлайн-страница меню", "Лёгкое обновление"],
@@ -262,7 +265,7 @@ const SERVICES = [
            ru: ["Меню и кнопки", "Приём заказов", "Ответы клиентам", "Интеграция канала"],
            en: ["Menu and buttons", "Order intake", "Customer replies", "Channel integration"] } },
   { id: "payclick", cat: "bot", price: "300K–500K", time: { uz: "1–3 kun", ru: "1–3 дня", en: "1–3 days" },
-    kw: ["payme", "click", "клик", "пейме", "to'lov", "tolov", "оплата", "платеж", "payment"],
+    kw: ["payme", "click", "клик", "пейме", "to'lov", "tolov", "оплата", "платеж", "payment", "bot"],
     title: { uz: "Payme/Click integratsiya", ru: "Интеграция Payme/Click", en: "Payme/Click integration" },
     inc: { uz: ["Merchant hisobiga ulash", "To'lov tugmalari", "Test va ishga tushirish"],
            ru: ["Подключение merchant-аккаунта", "Кнопки оплаты", "Тест и запуск"],
@@ -306,6 +309,12 @@ const SERVICES = [
 ];
 
 const SVC_BY_ID = Object.fromEntries(SERVICES.map(s => [s.id, s]));
+
+// entry price in thousands of UZS — used to sort lists cheapest-first
+const MIN_PRICE = { shopify: 800, products: 300, uzum: 500, landing: 500, corporate: 1000,
+                    qrmenu: 250, tbot: 500, payclick: 300, instagram: 200, gmb: 150,
+                    seo: 250, logo: 150, support: 200, premium: 2500 };
+
 const CATS = ["savdo", "sayt", "bot", "growth", "support", "premium"];
 
 // ---- Keyboards and cards -----------------------------------------------------
@@ -335,7 +344,7 @@ function servicesMenuKb(lang) {
 
 function categoryPage(lang, cat) {
   const L = T[lang].lbl;
-  const services = SERVICES.filter(s => s.cat === cat);
+  const services = SERVICES.filter(s => s.cat === cat).sort((a, b) => MIN_PRICE[a.id] - MIN_PRICE[b.id]);
   const kb = services.map(s => [{ text: `${s.title[lang]} · ${s.price} ${L.cur}`, callback_data: `svc_${s.id}` }]);
   kb.push([{ text: L.back_services, callback_data: "services_menu" }, { text: L.back, callback_data: "back_main" }]);
   return { text: `${L["cat_" + cat]} — ${services.length}\n${L.cat_pick}`, keyboard: { inline_keyboard: kb } };
@@ -346,7 +355,7 @@ function svcCard(lang, svc) {
   const lines = [
     `🛍 <b>${svc.title[lang]}</b>`,
     "",
-    `💰 ${L.price_label}: <b>${svc.price} ${L.cur}</b>`,
+    `💰 ${L.price_label}: <b>${svc.price} ${L.cur}</b> (${L.price_note})`,
     `⏱ ${L.duration_label}: ${svc.time[lang]}`,
     "",
     `✅ ${L.included_label}:`,
@@ -374,7 +383,7 @@ function searchServices(query) {
     const hits = svc.kw.filter(kw => q.includes(kw)).length;
     if (hits) scored.push({ hits, id: svc.id });
   }
-  scored.sort((a, b) => b.hits - a.hits);
+  scored.sort((a, b) => (b.hits - a.hits) || (MIN_PRICE[a.id] - MIN_PRICE[b.id]));
   return scored.slice(0, 4).map(x => SVC_BY_ID[x.id]);
 }
 
